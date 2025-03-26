@@ -48,44 +48,68 @@ public class Servidor {
                     Path pastaUsuario = Paths.get(nome);
                     String path = nome;
                     File directory = new File(path);
-                    if (!Files.exists(pastaUsuario)) {
+                    try {
                         Files.createDirectories(pastaUsuario);
                         System.out.println("Pasta criada para o usuário: " + pastaUsuario);
+                    } catch (IOException e) {
+                        dos.writeUTF("Erro ao criar diretório para o usuário.");
+                        e.printStackTrace();
                     }
-                    
-                    while (true){
+                    boolean chave = true;
+                    while (chave){
                         String linguagem = dis.readUTF();
 
-                        switch (linguagem){
+                        switch (linguagem) {
                             case "1":
-
+                                // Criar subpasta PDF
                                 Path subPastaPdf = pastaUsuario.resolve("PDF");
-                                Files.createDirectories(subPastaPdf);
-                                System.out.println("Pasta criada para o usuário: " + subPastaPdf);
+                                try {
+                                    Files.createDirectories(subPastaPdf);
+                                    System.out.println("Pasta PDF criada para o usuário: " + subPastaPdf);
+                                } catch (IOException e) {
+                                    dos.writeUTF("Erro ao criar pasta PDF.");
+                                    e.printStackTrace();
+                                }
                                 break;
                             case "2":
+                                // Criar subpasta TXT
                                 Path subPastaITXT = pastaUsuario.resolve("TXT");
-                                Files.createDirectories(subPastaITXT);
-                                System.out.println("Pasta 'TXT' criada para o usuário: " + subPastaITXT);
+                                try {
+                                    Files.createDirectories(subPastaITXT);
+                                    System.out.println("Pasta TXT criada para o usuário: " + subPastaITXT);
+                                } catch (IOException e) {
+                                    dos.writeUTF("Erro ao criar pasta TXT.");
+                                    e.printStackTrace();
+                                }
                                 break;
                             case "3":
                                 dos.writeUTF("PNG");
                                 break;
                             case "4":
-                            if (directory.isDirectory()) {
-                                // Lista todos os arquivos e diretórios no caminho especificado
-                                String[] files = directory.list();
-                                if (files != null && files.length > 0) {
-                                    dos.writeUTF("Conteúdo do repositório:");
-                                    for (String file : files) {
-                                        dos.writeUTF("teste123"+file);
+                                // Listar arquivos no diretório do usuário
+                                Path diretorio = pastaUsuario;
+                                if (Files.exists(diretorio) && Files.isDirectory(diretorio)) {
+                                    String[] files = diretorio.toFile().list();
+                                    if (files != null && files.length > 0) {
+                                        dos.writeUTF("Conteúdo do repositório:");
+                                        for (String file : files) {
+                                            dos.writeUTF(file); // Removido "teste123"
+                                        }
+                                    } else {
+                                        dos.writeUTF("Diretório vazio.");
                                     }
+                                } else {
+                                    dos.writeUTF("Erro: Diretório não encontrado.");
                                 }
-                            }
-                            break;
+                                break;
+                            case "5":
+                                // Encerra a conexão
+                                chave = false;
+                                break;
                             default:
-                                dos.writeUTF("Insira uma opção correta");
+                                dos.writeUTF("Insira uma opção correta.");
                         }
+
                         dos.writeUTF("Caminho: " + caminhoDiretorio);
                     }
 
