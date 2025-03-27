@@ -44,7 +44,6 @@ public class Servidor {
                         autenticado = true;
                         break;
                     }
-
                 }
 
                 if (autenticado) {
@@ -72,33 +71,21 @@ public class Servidor {
 
                         switch (linguagem) {
                             case "1":
-                                // Receber e salvar arquivo na subpasta PDF
-                                Path subPastaPdf = pastaUsuario.resolve("pdf");
-                                receiveFile(dis, subPastaPdf);
+                                receiveFile(dis, pastaUsuario.resolve("pdf"));
                                 break;
-
                             case "2":
-                                // Receber e salvar arquivo na subpasta TXT
-                                Path subPastaTxt = pastaUsuario.resolve("txt");
-                                receiveFile(dis, subPastaTxt);
+                                receiveFile(dis, pastaUsuario.resolve("txt"));
                                 break;
-
                             case "3":
-                                // Receber e salvar arquivo na subpasta JPG
-                                Path subPastaJpg = pastaUsuario.resolve("jpg");
-                                receiveFile(dis, subPastaJpg);
+                                receiveFile(dis, pastaUsuario.resolve("jpg"));
                                 break;
-
                             case "4":
-                                // Listar arquivos no diretório do usuário
-                                listarArquivos(pastaUsuario, dos);
+                                listarArquivosRecursivo(pastaUsuario, dos);
                                 break;
-
                             case "5":
                                 dos.writeUTF("Encerrando conexão...");
                                 chave = false;
                                 break;
-
                             default:
                                 dos.writeUTF("Opção inválida. Escolha novamente.");
                         }
@@ -113,7 +100,6 @@ public class Servidor {
         }
     }
 
-    // Método para criar subpastas PDF, JPG, TXT
     private static void criarSubpasta(Path pastaUsuario, String subpasta) {
         Path subPastaPath = pastaUsuario.resolve(subpasta);
         try {
@@ -126,36 +112,38 @@ public class Servidor {
         }
     }
 
-    // Método para listar os arquivos do usuário
-    private static void listarArquivos(Path pastaUsuario, DataOutputStream dos) throws IOException {
-        File[] arquivos = pastaUsuario.toFile().listFiles();
+    private static void listarArquivosRecursivo(Path pasta, DataOutputStream dos) throws IOException {
+        File[] arquivos = pasta.toFile().listFiles();
         if (arquivos != null && arquivos.length > 0) {
             dos.writeUTF("Conteúdo do repositório:");
             for (File file : arquivos) {
-                dos.writeUTF(file.getName());
+                if (file.isDirectory()) {
+                    listarArquivosRecursivo(file.toPath(), dos);
+                } else {
+                    dos.writeUTF(file.getAbsolutePath());
+                }
             }
         } else {
             dos.writeUTF("Diretório vazio ou erro ao acessar o diretório.");
         }
     }
 
-// Servidor.java (no método 'receiveFile')
-private static void receiveFile(DataInputStream dis, Path pastaDestino) throws IOException {
-    String nomeArquivo = dis.readUTF(); // Lê o nome do arquivo
-    long fileSize = dis.readLong(); // Lê o tamanho do arquivo
-    Path caminhoArquivo = pastaDestino.resolve(nomeArquivo); // Caminho final no servidor
+    private static void receiveFile(DataInputStream dis, Path pastaDestino) throws IOException {
+        String nomeArquivo = dis.readUTF();
+        long fileSize = dis.readLong();
+        Path caminhoArquivo = pastaDestino.resolve(nomeArquivo);
 
-    try (FileOutputStream fos = new FileOutputStream(caminhoArquivo.toFile())) {
-        byte[] buffer = new byte[4096];
-        int bytesRead;
-        long totalRead = 0;
+        try (FileOutputStream fos = new FileOutputStream(caminhoArquivo.toFile())) {
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            long totalRead = 0;
 
-        while ((bytesRead = dis.read(buffer, 0, Math.min(buffer.length, (int) (fileSize - totalRead)))) > 0) {
-            fos.write(buffer, 0, bytesRead);
-            totalRead += bytesRead;
+            while ((bytesRead = dis.read(buffer, 0, Math.min(buffer.length, (int) (fileSize - totalRead)))) > 0) {
+                fos.write(buffer, 0, bytesRead);
+                totalRead += bytesRead;
+            }
+
+            System.out.println("Arquivo recebido com sucesso: " + caminhoArquivo);
         }
-
-        System.out.println("Arquivo recebido com sucesso: " + caminhoArquivo);
     }
-}
 }

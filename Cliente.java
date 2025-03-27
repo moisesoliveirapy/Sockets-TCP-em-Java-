@@ -1,5 +1,3 @@
-
-// Cliente.java
 import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
@@ -38,7 +36,7 @@ public class Cliente {
 
                 while (continuar) {
                     System.out.println(
-                            "Escolha uma opção:\n1 - Enviar PDF\n2 - Enviar TXT\n3 - Enviar JPG\n4 - Listar pastas\n5 - Sair");
+                            "Escolha uma opção:\n1 - Enviar PDF\n2 - Enviar TXT\n3 - Enviar JPG\n4 - Listar pastas\n5 - Baixar arquivo\n6 - Sair");
                     String opcao = read.nextLine();
                     dos.writeUTF(opcao);
 
@@ -72,12 +70,17 @@ public class Cliente {
                                 System.out.println("- " + arquivo);
                             }
                             break;
-
                         case "5":
+                            // Baixar arquivo
+                            System.out.println("Digite o nome do arquivo para download: ");
+                            String arquivoParaBaixar = read.nextLine();
+                            dos.writeUTF(arquivoParaBaixar);
+                            receberArquivo(dis, arquivoParaBaixar);
+                            break;
+                        case "6":
                             System.out.println("Encerrando conexão...");
                             continuar = false;
                             break;
-
                         default:
                             System.out.println("Opção inválida, tente novamente.");
                             break;
@@ -105,9 +108,7 @@ public class Cliente {
 
         try {
             dos.writeUTF(arquivo.getName()); // Enviar nome do arquivo
-            System.out.println("Nome" + arquivo.getName());
             dos.writeLong(arquivo.length()); // Enviar tamanho do arquivo
-            System.out.println("Tamanho" + arquivo.length());
 
             FileInputStream fis = new FileInputStream(arquivo);
             byte[] buffer = new byte[4096];
@@ -116,7 +117,6 @@ public class Cliente {
             // Enviar os dados do arquivo em pedaços
             while ((bytesLidos = fis.read(buffer)) > 0) {
                 dos.write(buffer, 0, bytesLidos);
-                System.out.println(bytesLidos);
             }
 
             fis.close();
@@ -124,6 +124,28 @@ public class Cliente {
 
         } catch (IOException e) {
             System.out.println("Erro ao enviar o arquivo.");
+            e.printStackTrace();
+        }
+    }
+
+    // Método para receber arquivos do servidor
+    private static void receberArquivo(DataInputStream dis, String nomeArquivo) {
+        try {
+            long fileSize = dis.readLong(); // Lê o tamanho do arquivo
+            FileOutputStream fos = new FileOutputStream(nomeArquivo);
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            long totalRead = 0;
+
+            while (totalRead < fileSize && (bytesRead = dis.read(buffer, 0, (int) Math.min(buffer.length, fileSize - totalRead))) > 0) {
+                fos.write(buffer, 0, bytesRead);
+                totalRead += bytesRead;
+            }
+
+            fos.close();
+            System.out.println("Arquivo recebido com sucesso: " + nomeArquivo);
+        } catch (IOException e) {
+            System.out.println("Erro ao receber o arquivo.");
             e.printStackTrace();
         }
     }
