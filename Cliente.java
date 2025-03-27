@@ -1,6 +1,6 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+
+// Cliente.java
+import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
 
@@ -24,7 +24,7 @@ public class Cliente {
             System.out.println("Insira a senha: ");
             String senha = read.nextLine();
 
-            // Envia o nome, login e senha para o servidor
+            // Envia nome, login e senha para o servidor
             dos.writeUTF(nome);
             dos.writeUTF(login);
             dos.writeUTF(senha);
@@ -34,20 +34,53 @@ public class Cliente {
             System.out.println("Resposta do servidor: " + resposta);
 
             if (resposta.startsWith("Login bem-sucedido")) {
-                // Solicita a escolha da linguagem e envia para o servidor
-                System.out.println("Insira a linguagem:\n1 - PDF\n2 - TXT\n3 - JPG\n4 - Listar pastas\n5 - Desligar Servidor");
-                String linguagem = read.nextLine();
-                dos.writeUTF(linguagem);
+                boolean continuar = true;
 
-                // Recebe resposta sobre a linguagem escolhida
-                String respostaLinguagem = dis.readUTF();
-                System.out.println("Resposta do servidor sobre a linguagem: " + respostaLinguagem);
+                while (continuar) {
+                    System.out.println(
+                            "Escolha uma opção:\n1 - Enviar PDF\n2 - Enviar TXT\n3 - Enviar JPG\n4 - Listar pastas\n5 - Sair");
+                    String opcao = read.nextLine();
+                    dos.writeUTF(opcao);
 
-                if (linguagem.equals("4")) {
-                    // Caso a opção seja "Listar pastas", o servidor enviará a lista de arquivos
-                    String arquivo;
-                    while (!(arquivo = dis.readUTF()).equals("FIM")) {
-                        System.out.println("Arquivo encontrado: " + arquivo);
+                    switch (opcao) {
+                        case "1":
+                            // Enviar arquivo
+                            System.out.println("Digite o caminho do arquivo: ");
+                            String caminhoArquivoPdf = read.nextLine();
+                            enviarArquivo(caminhoArquivoPdf, dos, ".pdf");
+                            break;
+                        case "2":
+                            // Enviar arquivo
+                            System.out.println("Digite o caminho do arquivo: ");
+                            String caminhoArquivoTxt = read.nextLine();
+                            enviarArquivo(caminhoArquivoTxt, dos, ".txt");
+                            break;
+                        case "3":
+                            // Enviar arquivo
+                            System.out.println("Digite o caminho do arquivo: ");
+                            String caminhoArquivoPng = read.nextLine();
+                            enviarArquivo(caminhoArquivoPng, dos, ".png");
+                            break;
+                        case "4":
+                            // Receber lista de arquivos do servidor
+                            System.out.println("Arquivos no servidor:");
+                            while (true) {
+                                String arquivo = dis.readUTF();
+                                if (arquivo.equals("FIM")) {
+                                    break; // Finaliza quando receber "FIM"
+                                }
+                                System.out.println("- " + arquivo);
+                            }
+                            break;
+
+                        case "5":
+                            System.out.println("Encerrando conexão...");
+                            continuar = false;
+                            break;
+
+                        default:
+                            System.out.println("Opção inválida, tente novamente.");
+                            break;
                     }
                 }
             }
@@ -58,6 +91,39 @@ public class Cliente {
             dos.close();
             read.close();
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Método para enviar arquivos ao servidor
+    private static void enviarArquivo(String caminhoArquivo, DataOutputStream dos, String tipo) {
+        File arquivo = new File(caminhoArquivo);
+        if (!arquivo.exists()) {
+            System.out.println("Erro: Arquivo não encontrado.");
+            return;
+        }
+
+        try {
+            dos.writeUTF(arquivo.getName()); // Enviar nome do arquivo
+            System.out.println("Nome" + arquivo.getName());
+            dos.writeLong(arquivo.length()); // Enviar tamanho do arquivo
+            System.out.println("Tamanho" + arquivo.length());
+
+            FileInputStream fis = new FileInputStream(arquivo);
+            byte[] buffer = new byte[4096];
+            int bytesLidos;
+
+            // Enviar os dados do arquivo em pedaços
+            while ((bytesLidos = fis.read(buffer)) > 0) {
+                dos.write(buffer, 0, bytesLidos);
+                System.out.println(bytesLidos);
+            }
+
+            fis.close();
+            System.out.println("Arquivo enviado com sucesso!");
+
+        } catch (IOException e) {
+            System.out.println("Erro ao enviar o arquivo.");
             e.printStackTrace();
         }
     }
